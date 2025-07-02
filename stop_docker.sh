@@ -15,4 +15,6 @@ cd "/home/deploy/$DEPLOY_ENV"
 # выполняем остановку
 docker compose down
 
+# TODO: ElmirKuba 2025-07-03: Добавить остановку через docker stop name обоих контейнеров
+
 echo "✅ Контейнеры в $DEPLOY_ENV остановлены."
