@@ -144,7 +144,9 @@ else
   exit 1
 fi
 
-docker compose down
+# выполняем остановку
+docker stop service_omp_server_prod
+docker stop mysql_omp_server_prod
 
 docker compose -f "/home/deploy/${DEPLOY_ENV}/docker/compose-files/docker-compose.production.yml" \
   --env-file "/home/deploy/${DEPLOY_ENV}/.env" \
