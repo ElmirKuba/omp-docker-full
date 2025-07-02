@@ -13,8 +13,7 @@ echo "🛑 Останавливаем OpenMP сервер в окружении 
 cd "/home/deploy/$DEPLOY_ENV"
 
 # выполняем остановку
-docker compose down
-
-# TODO: ElmirKuba 2025-07-03: Добавить остановку через docker stop name обоих контейнеров
+docker stop service_omp_server_prod
+docker stop mysql_omp_server_prod
 
 echo "✅ Контейнеры в $DEPLOY_ENV остановлены."
