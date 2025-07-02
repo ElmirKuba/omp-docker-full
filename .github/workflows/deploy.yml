@@ -1,0 +1,78 @@
+name: 🚀 Manual Deploy with Env and Branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Выбери ветку (из Git), которую требуется деплоить'
+        required: true
+        default: 'main'
+        type: choice
+        options:
+          - main
+          - rc
+          - develop
+
+      environment:
+        description: 'Выбери окружение'
+        required: true
+        default: 'prod7777'
+        type: choice
+        options:
+          - prod7777
+          - stage5555
+          - dev1111
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Установка sshpass
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sshpass
+
+      - name: Обновление deploy_docker.sh и запуск деплоя на ВДС
+        env:
+          VDS_USER: ${{ secrets.VDS_USER }}
+          VDS_IP: ${{ secrets.VDS_IP }}
+          VDS_PASSWORD: ${{ secrets.VDS_PASSWORD }}
+          DEPLOY_ENV: ${{ github.event.inputs.environment }}
+          DEPLOY_BRANCH: ${{ github.event.inputs.branch }}
+        run: |
+          echo "🔧 Обновляем скрипт и деплоим"
+          sshpass -p "$VDS_PASSWORD" ssh -o StrictHostKeyChecking=no "$VDS_USER@$VDS_IP" << EOF
+            set -euo pipefail
+
+            # Каталог, где должен быть клон (или где мы его создадим)
+            REPO_DIR="/home/deploy/${DEPLOY_ENV}"
+
+            # Если репо ещё не инициализировано — создаём и настраиваем remote
+            if [ ! -d "\$REPO_DIR/.git" ]; then
+              echo "📁 Репозиторий не найден в \$REPO_DIR, инициализируем пустой репозиторий"
+              mkdir -p "\$REPO_DIR"
+              cd "\$REPO_DIR"
+              git init
+              git remote add origin git@github.com:ElmirKuba/omp-docker-full.git
+            else
+              cd "\$REPO_DIR"
+            fi
+
+          # Подтягиваем из origin/main только метаданные (shallow fetch)
+          echo "🔄 Fetch origin/main (shallow)"
+          git fetch origin "$DEPLOY_BRANCH" --depth=1
+
+          # Извлекаем единственный файл deploy_docker.sh
+          echo "📥 Вытягиваем deploy_docker.sh"
+          git show "origin/$DEPLOY_BRANCH":deploy_docker.sh \
+              > /home/deploy/deploy_docker.sh
+
+          # Делаем его исполняемым
+          chmod +x /home/deploy/deploy_docker.sh
+
+          # Запускаем обновлённый скрипт
+          echo "🚀 Запускаем deploy_docker.sh"
+          DEPLOY_ENV=${DEPLOY_ENV} DEPLOY_BRANCH=${DEPLOY_BRANCH} bash /home/deploy/deploy_docker.sh
+
+          echo "🎉 Деплой завершён!"
+          EOF

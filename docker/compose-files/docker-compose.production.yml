@@ -1,0 +1,64 @@
+services:
+  mysql_omp_server_prod:
+    container_name: mysql_omp_server_prod
+    image: mysql:5.6.51
+    restart: unless-stopped
+    platform: linux/amd64
+    environment:
+      - MYSQL_DATABASE=mysql_omp_server_prod
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=omp_server_root
+    volumes:
+      - ./../sql-files/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./../volumes/mysql_data:/var/lib/mysql
+    expose:
+      - 3306
+    networks:
+      - network_omp_server
+
+  service_omp_server_prod:
+    container_name: service_omp_server_prod
+    build:
+      context: ./../../
+      dockerfile: ./docker/dockerfiles/Dockerfile.omp.production
+      args:
+        PAWN_VERSION: ${PAWN_VERSION}
+        OMP_VERSION: ${OMP_VERSION}
+        OMP_SERVER_PORT: ${OMP_SERVER_PORT}
+    restart: unless-stopped
+    platform: linux/amd64
+    volumes:
+      - ./../../omp-server/logs:/service_omp_server_dev/omp-server/logs:rw
+      - ./../../omp-server/scriptfiles:/service_omp_server_dev/omp-server/scriptfiles:rw
+      - ./../../omp-server/bans.json:/service_omp_server_dev/omp-server/bans.json:rw
+      - ./../../omp-server/config.json:/service_omp_server_dev/omp-server/config.json:rw
+    environment:
+      - MYSQL_HOST_AND_NAME_DATABASE=mysql_omp_server_prod
+      - MYSQL_PORT=3306
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - OMP_SERVER_PORT=${OMP_SERVER_PORT}
+      - OMP_SERVER_PLAYERS=${OMP_SERVER_PLAYERS}
+      - OMP_SERVER_RCON=${OMP_SERVER_RCON}
+      - OMP_SERVER_WEBSITE=${OMP_SERVER_WEBSITE}
+      - OMP_SERVER_PLUGINS=${OMP_SERVER_PLUGINS}
+      - OMP_SERVER_GAMEMODES=${OMP_SERVER_GAMEMODES}
+      - OMP_ENABLE_COMPILATION_GAMEMODES=${OMP_ENABLE_COMPILATION_GAMEMODES}
+      - OMP_ENABLE_CONFIG_UPDATER=${OMP_ENABLE_CONFIG_UPDATER}
+    expose:
+      - ${OMP_SERVER_PORT}
+    ports:
+      - ${OMP_SERVER_PORT}:${OMP_SERVER_PORT}/udp
+    networks:
+      - network_omp_server
+    tty: true
+    stdin_open: true
+    depends_on:
+      - mysql_omp_server_prod
+    command: ['sh', '-c', 'sleep 30 && unix-scripts/production_init_starter.sh']
+
+networks:
+  network_omp_server:
+    name: network_omp_server
+    external: true

@@ -1,0 +1,71 @@
+name: 🛑 Manual Stop Containers with Env and Branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Выбери ветку (из Git), из которой взять stop_docker.sh'
+        required: true
+        default: 'main'
+        type: choice
+        options:
+          - main
+          - rc
+          - develop
+
+      environment:
+        description: 'Выбери окружение'
+        required: true
+        default: 'prod7777'
+        type: choice
+        options:
+          - prod7777
+          - stage5555
+          - dev1111
+
+jobs:
+  stop:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Установка sshpass
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sshpass
+
+      - name: Обновление stop_docker.sh и остановка контейнеров на ВДС
+        env:
+          VDS_USER: ${{ secrets.VDS_USER }}
+          VDS_IP: ${{ secrets.VDS_IP }}
+          VDS_PASSWORD: ${{ secrets.VDS_PASSWORD }}
+          STOP_BRANCH: ${{ github.event.inputs.branch }}
+          DEPLOY_ENV: ${{ github.event.inputs.environment }}
+        run: |
+          echo "🛑 Обновляем stop_docker.sh из ветки $STOP_BRANCH и останавливаем контейнеры"
+          sshpass -p "$VDS_PASSWORD" ssh -o StrictHostKeyChecking=no "$VDS_USER@$VDS_IP" << EOF
+            set -euo pipefail
+
+            REPO_DIR="/home/deploy/${DEPLOY_ENV}"
+
+            # Если ещё нет клона — инициализируем пустой репозиторий
+            if [ ! -d "\$REPO_DIR/.git" ]; then
+              echo "📁 Инициализируем репозиторий в \$REPO_DIR"
+              mkdir -p "\$REPO_DIR"
+              cd "\$REPO_DIR"
+              git init
+              git remote add origin git@github.com:ElmirKuba/omp-docker-full.git
+            else
+              cd "\$REPO_DIR"
+            fi
+
+          echo "🔄 Fetch origin/$STOP_BRANCH (shallow)"
+          git fetch origin "$STOP_BRANCH" --depth=1
+
+          echo "📥 Вытягиваем stop_docker.sh"
+          git show "origin/$STOP_BRANCH":stop_docker.sh > /home/deploy/stop_docker.sh
+          chmod +x /home/deploy/stop_docker.sh
+
+          echo "🚀 Запускаем stop_docker.sh"
+          DEPLOY_ENV=${DEPLOY_ENV} bash /home/deploy/stop_docker.sh
+
+          echo "✅ Контейнеры в $DEPLOY_ENV остановлены."
+          EOF

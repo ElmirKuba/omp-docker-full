@@ -1,0 +1,93 @@
+services:
+  mysql_omp_server_dev:
+    container_name: mysql_omp_server_dev
+    image: mysql:5.6.51
+    restart: unless-stopped
+    platform: linux/amd64
+    environment:
+      - MYSQL_DATABASE=mysql_omp_server_dev
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=omp_server_root
+    volumes:
+      - ./../sql-files/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - ./../volumes/mysql_data:/var/lib/mysql
+    expose:
+      - 3306
+    ports:
+      - 3306:3306
+    networks:
+      - network_omp_server
+
+  pma_omp_dev:
+    container_name: pma_omp_dev
+    image: phpmyadmin
+    restart: unless-stopped
+    platform: linux/amd64
+    environment:
+      - PMA_ARBITRARY=0
+      - PMA_HOST=mysql_omp_server_dev
+      - PMA_PORT=3306
+    expose:
+      - ${PMA_INTERNAL_PORT}
+    ports:
+      - ${PMA_EXTERNAL_PORT}:${PMA_INTERNAL_PORT}
+    networks:
+      - network_omp_server
+    depends_on:
+      - mysql_omp_server_dev
+
+  service_omp_server_dev:
+    container_name: service_omp_server_dev
+    build:
+      context: ./../../
+      dockerfile: ./docker/dockerfiles/Dockerfile.omp.development
+      args:
+        PAWN_VERSION: ${PAWN_VERSION}
+        OMP_VERSION: ${OMP_VERSION}
+        OMP_SERVER_PORT: ${OMP_SERVER_PORT}
+    restart: unless-stopped
+    platform: linux/amd64
+    volumes:
+      - ./../../omp-server/components:/service_omp_server_dev/omp-server/components:rw
+      - ./../../omp-server/filterscripts:/service_omp_server_dev/omp-server/filterscripts:rw
+      - ./../../omp-server/gamemodes:/service_omp_server_dev/omp-server/gamemodes:rw
+      - ./../../omp-server/include:/service_omp_server_dev/omp-server/include:rw
+      - ./../../omp-server/logs:/service_omp_server_dev/omp-server/logs:rw
+      - ./../../omp-server/models:/service_omp_server_dev/omp-server/models:rw
+      - ./../../omp-server/pawno:/service_omp_server_dev/omp-server/pawno:rw
+      - ./../../omp-server/plugins:/service_omp_server_dev/omp-server/plugins:rw
+      - ./../../omp-server/scriptfiles:/service_omp_server_dev/omp-server/scriptfiles:rw
+      - ./../../omp-server/bans.json:/service_omp_server_dev/omp-server/bans.json:rw
+      - ./../../omp-server/config.json:/service_omp_server_dev/omp-server/config.json:rw
+    environment:
+      - MYSQL_HOST_AND_NAME_DATABASE=mysql_omp_server_dev
+      - MYSQL_PORT=3306
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - OMP_SERVER_PORT=${OMP_SERVER_PORT}
+      - OMP_SERVER_PLAYERS=${OMP_SERVER_PLAYERS}
+      - OMP_SERVER_RCON=${OMP_SERVER_RCON}
+      - OMP_SERVER_WEBSITE=${OMP_SERVER_WEBSITE}
+      - OMP_SERVER_PLUGINS=${OMP_SERVER_PLUGINS}
+      - OMP_SERVER_GAMEMODES=${OMP_SERVER_GAMEMODES}
+      - OMP_ENABLE_COMPILATION_GAMEMODES=${OMP_ENABLE_COMPILATION_GAMEMODES}
+      - OMP_ENABLE_CONFIG_UPDATER=${OMP_ENABLE_CONFIG_UPDATER}
+    expose:
+      - ${OMP_SERVER_PORT}
+    ports:
+      - ${OMP_SERVER_PORT}:${OMP_SERVER_PORT}/udp
+    networks:
+      - network_omp_server
+    tty: true
+    stdin_open: true
+    depends_on:
+      - mysql_omp_server_dev
+      - pma_omp_dev
+    command:
+      ['sh', '-c', 'sleep 30 && unix-scripts/development_nodemon_watcher.sh']
+
+networks:
+  network_omp_server:
+    name: network_omp_server
+    external: true

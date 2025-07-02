@@ -1,0 +1,4 @@
+hostname=mysql_omp_server_dev
+username=omp-server-user
+database=mysql_omp_server_dev
+password=omp-server-pass

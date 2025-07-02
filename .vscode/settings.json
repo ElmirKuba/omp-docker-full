@@ -1,0 +1,19 @@
+{
+  // Общая кодировка (оставляем UTF‑8 для остальных)
+  "files.encoding": "utf8",
+
+  // 1) Сопоставляем ваши расширения с языком C
+  "files.associations": {
+    "*.pwn": "c",
+    "*.inc": "c"
+  },
+
+  // 2) Для всех файлов, распознанных как C, ставим кодировку CP1251
+  "[c]": {
+    "files.encoding": "windows1251",
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false,
+    "editor.formatOnSave": false
+  }
+}
