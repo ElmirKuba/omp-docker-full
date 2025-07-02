@@ -150,18 +150,6 @@ docker compose -f "/home/deploy/${DEPLOY_ENV}/docker/compose-files/docker-compos
   --env-file "/home/deploy/${DEPLOY_ENV}/.env" \
   up --build -d
 
-# echo
-# echo "⏳ Даем контейнеру OMP 30 секунд на запуск."
-# for i in $(seq 30 -1 1); do
-#   printf "\rЗапуск контейнеров: %2d сек" "$i"
-#   sleep 1
-# done
-# echo -e "\r✅ Контейнер должен был быть запущен!                      "
-
-# echo "🎉 Деплой завершён."
-
-# docker logs -f service_omp_server_prod
-
 echo
 echo "⏳ Вывод логов контейнера 'service_omp_server_prod' в течение 45 секунд..."
 
