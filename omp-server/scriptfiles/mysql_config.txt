@@ -1,4 +1,4 @@
-hostname=mysql_omp_server_dev
-username=omp-server-user
-database=mysql_omp_server_dev
-password=omp-server-pass
+hostname=lol kek azaza
+username=lol kek azaza
+database=lol kek azaza
+password=lol kek azaza
